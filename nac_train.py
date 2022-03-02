@@ -93,6 +93,9 @@ def nac_train(match_information, train_data, vali_data, mark):
     train_dataset = nac_dataloader.nac_dataset(train_data)
     train_dataloader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
+    vali_dataset = nac_dataloader.nac_dataset(vali_data)
+    vali_dataloader = DataLoader(vali_dataset, batch_size=32, shuffle=True)
+
     '''nac net'''
     net = nac.nac_net(embed_dim=20, hero_num=hero_num, team_size=team_size, attention=True)
     net = net.to(device)
@@ -105,7 +108,7 @@ def nac_train(match_information, train_data, vali_data, mark):
     '''Start training'''
     for epoch in range(50):
         print("Epoch", epoch)
-        for i, (input_data, label) in enumerate(train_dataloader):
+        for _, (input_data, label) in enumerate(train_dataloader):
 
             '''Initialization the gradient'''
             optimizer.zero_grad()
@@ -121,9 +124,32 @@ def nac_train(match_information, train_data, vali_data, mark):
             running_loss += loss.item()
         print("Loss:", running_loss)
 
-        vali_path = "net_records_validation.pth"
-        vali_results = nac_eval(vali_path, vali_data)
-        print("Validation of epoch", epoch, ":", vali_results)
+        '''Validation'''
+        vali_preds, vali_labels = []
+        for _, (input_data, label) in enumerate(vali_dataloader):
+            with torch.no_grad():
+                input_data = input_data.to(device)
+                prediction = net(input_data)
+
+                prediction = prediction.reshape(-1)
+                label = label.reshape(-1)
+
+                vali_preds.append(prediction)
+                vali_labels.append(label)
+
+        vali_preds = torch.cat(vali_preds).cpu().numpy()
+        vali_labels = torch.cat(vali_labels).cpu().numpy()
+
+        '''AUC'''
+        auc = metrics.roc_auc_score(vali_labels, vali_preds)
+
+        '''Acc'''
+        vali_preds[vali_preds >= 0.5] = 1
+        vali_preds[vali_preds < 0.5] = 0
+        acc = np.nanmean((vali_preds == vali_labels) * 1)
+
+
+        print("Validation of epoch (AUC, Acc)", epoch, ":", auc, acc)
 
 
     print("----Training End----")
