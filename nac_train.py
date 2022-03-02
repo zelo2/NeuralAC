@@ -101,12 +101,12 @@ def nac_train(match_information, train_data, vali_data, mark):
     net = net.to(device)
 
     '''loss functional and optimization method'''
-    running_loss = 0
     loss_function = nn.BCELoss()
     optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001)
 
     '''Start training'''
     for epoch in range(50):
+        running_loss = 0
         print("Epoch", epoch)
         for _, (input_data, label) in enumerate(train_dataloader):
 
