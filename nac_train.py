@@ -125,7 +125,7 @@ def nac_train(match_information, train_data, vali_data, mark):
         print("Loss:", running_loss)
 
         '''Validation'''
-        vali_preds, vali_labels = []
+        vali_preds, vali_labels = [], []
         for _, (input_data, label) in enumerate(vali_dataloader):
             with torch.no_grad():
                 input_data = input_data.to(device)
